@@ -76,6 +76,18 @@ def compare_by_cross_val(X, Y, k=5):
     plt.show()
 
 
+def test(X_train, Y_train, X_test, Y_test):
+    ada_boost = AdaBoost(T=80)
+    pred_test_score = ada_boost.adaboost(X_train, Y_train, X_test, Y_test)[1]
+    boost_auc = roc_auc_score(Y_test, pred_test_score)
+    print(boost_auc)
+    forest = RandomForest(ntrees=100)
+    forest.fit(X_train, Y_train)
+    pred_test_score = forest.predict(X_test)[1]
+    forest_auc = roc_auc_score(Y_test, pred_test_score)
+    print(forest_auc)
+
+
 if __name__ == '__main__':
 
     with open('adult_dataset/adult_train_feature.txt') as f:
@@ -100,4 +112,7 @@ if __name__ == '__main__':
             if Y_test[i] == 0:
                 Y_test[i] = -1
 
-    compare_by_cross_val(X_train, Y_train)
+    # compare_by_cross_val(X_train, Y_train)
+
+    # using best-number base classifiers to test
+    test(X_train, Y_train, X_test, Y_test)
