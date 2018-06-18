@@ -1,14 +1,18 @@
+import numpy as np
+import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import roc_auc_score
-import pandas as pd
-import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 
+def get_error_rate(pred, Y):
+    return sum(pred!=Y) / len(pred)
 class AdaBoost:
-    def __init__(self, T=5):
-        self.T = 5
+    def __init__(self, T=40):
+        self.T = T
+
     def adaboost(self, X_train, Y_train, X_test, Y_test):
-        #init
-        dec_tree = DecisionTreeClassifier()
+        # init
+        dec_tree = DecisionTreeClassifier(max_depth=1)
         n_train, n_test = len(X_train), len(X_test)
         distribute_weight = np.ones(n_train) / n_train
         pred_train, pred_test = np.zeros(n_train), np.zeros(n_test)
@@ -35,11 +39,9 @@ class AdaBoost:
 
         pred_train, pred_test = np.sign(pred_train), np.sign(pred_test)
 
-        auc_score = roc_auc_score(Y_test, pred_test)
-        print(auc_score)
+        # print(get_error_rate(pred_test, Y_test))
+        return pred_train, pred_test
         
-
-
 
 if __name__ == '__main__':
     with open('adult_dataset/adult_train_feature.txt') as f:
@@ -49,6 +51,9 @@ if __name__ == '__main__':
     with open('adult_dataset/adult_train_label.txt') as f:
         Y_train = pd.read_table(f, sep=' ', header=None)
         Y_train = Y_train.values.ravel()
+        for i in range(len(Y_train)):
+            if Y_train[i] == 0:
+                Y_train[i] = -1
     
     with open('adult_dataset/adult_test_feature.txt') as f:
         X_test = pd.read_table(f, sep=' ', header=None)
@@ -57,7 +62,16 @@ if __name__ == '__main__':
     with open('adult_dataset/adult_test_label.txt') as f:
         Y_test = pd.read_table(f, sep=' ', header=None)
         Y_test = Y_test.values.ravel()
-    
-    ada_boost = AdaBoost()
+        for i in range(len(Y_test)):
+            if Y_test[i] == 0:
+                Y_test[i] = -1
 
-    ada_boost.adaboost(X_train, Y_train, X_test, Y_test)
+    dec_tree = DecisionTreeClassifier()
+    dec_tree.fit(X_train, Y_train)
+    pred_test = dec_tree.predict(X_test)
+    print('AUC on test data (standard decision tree): %f, error rata: %f' % (roc_auc_score(Y_test, pred_test), get_error_rate(pred_test, Y_test)))
+
+
+    ada_boost = AdaBoost()
+    pred_train, pred_test = ada_boost.adaboost(X_train, Y_train, X_test, Y_test)
+    print('T = %d, AUC on test data: %f, error rate: %f' % (ada_boost.T, roc_auc_score(Y_test, pred_test), get_error_rate(pred_test, Y_test)))
